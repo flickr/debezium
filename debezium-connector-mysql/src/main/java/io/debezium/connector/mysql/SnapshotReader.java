@@ -462,6 +462,9 @@ public class SnapshotReader extends AbstractReader {
                             break;
                         }
                         String dbName = entry.getKey();
+                        if (!createTableFilters.databaseFilter().test(dbName)) {
+                            continue;
+                        }
                         // First drop, create, and then use the named database ...
                         schema.applyDdl(source, dbName, "DROP DATABASE IF EXISTS " + quote(dbName), this::enqueueSchemaChanges);
                         schema.applyDdl(source, dbName, "CREATE DATABASE " + quote(dbName), this::enqueueSchemaChanges);
@@ -469,6 +472,9 @@ public class SnapshotReader extends AbstractReader {
                         for (TableId tableId : entry.getValue()) {
                             if (!isRunning()) {
                                 break;
+                            }
+                            if (!createTableFilters.tableFilter().test(tableId)) {
+                                continue;
                             }
                             sql.set("SHOW CREATE TABLE " + quote(tableId));
                             mysql.query(sql.get(), rs -> {
