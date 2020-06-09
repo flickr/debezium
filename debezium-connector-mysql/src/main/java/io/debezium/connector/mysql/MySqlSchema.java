@@ -76,6 +76,7 @@ public class MySqlSchema extends RelationalDatabaseSchema {
     private final boolean skipUnparseableDDL;
     private final boolean storeOnlyMonitoredTablesDdl;
     private boolean recoveredTables;
+    private final boolean ignoreBuildInTablesDdl;
 
     /**
      * Create a schema component given the supplied {@link MySqlConnectorConfig MySQL connector configuration}.
@@ -118,6 +119,7 @@ public class MySqlSchema extends RelationalDatabaseSchema {
                 .build();
         this.skipUnparseableDDL = dbHistoryConfig.getBoolean(DatabaseHistory.SKIP_UNPARSEABLE_DDL_STATEMENTS);
         this.storeOnlyMonitoredTablesDdl = dbHistoryConfig.getBoolean(DatabaseHistory.STORE_ONLY_MONITORED_TABLES_DDL);
+        this.ignoreBuildInTablesDdl = config.getBoolean(MySqlConnectorConfig.TABLES_IGNORE_BUILTIN_DDL);
 
         this.ddlParser = new MySqlAntlrDdlParser(getValueConverters(configuration), getTableFilter());
         this.ddlChanges = this.ddlParser.getDdlChanges();
@@ -361,7 +363,17 @@ public class MySqlSchema extends RelationalDatabaseSchema {
             // - all DDLs if configured
             // - or global SET variables
             // - or DDLs for monitored objects
-            if (!storeOnlyMonitoredTablesDdl || isGlobalSetVariableStatement(ddlStatements, databaseName) || changes.stream().anyMatch(filters().tableFilter()::test)) {
+            if (!storeOnlyMonitoredTablesDdl) {
+                if (isIgnoreBuildInTablesDdl()) {
+                    if (!filters.builtInDatabaseFilter().test(databaseName)) {
+                        dbHistory.record(source.partition(), source.offset(), databaseName, ddlStatements);
+                    }
+                }
+                else {
+                    dbHistory.record(source.partition(), source.offset(), databaseName, ddlStatements);
+                }
+            }
+            else if (isGlobalSetVariableStatement(ddlStatements, databaseName) || changes.stream().anyMatch(filters().tableFilter()::test)) {
                 dbHistory.record(source.partition(), source.offset(), databaseName, ddlStatements);
             }
         }
@@ -391,6 +403,14 @@ public class MySqlSchema extends RelationalDatabaseSchema {
      */
     public boolean isStoreOnlyMonitoredTablesDdl() {
         return storeOnlyMonitoredTablesDdl;
+    }
+
+    /**
+     * @return true if DDL statements of builtin tables should be ignored in database history,
+     * false if all tables should be stored
+     */
+    public boolean isIgnoreBuildInTablesDdl() {
+        return ignoreBuildInTablesDdl;
     }
 
     @Override
