@@ -54,6 +54,8 @@ Debezium binds four variables into the evaluation context:
 * `value` - a value of the message
 * `keySchema` - the schema of the message key
 * `valueSchema` - the schema of the message value
+* `topic` - the name of the target topic
+* `headers` - the map of message headers keyed with header name and value composed of `schema` and `value` variables
 
 The `key` and `value` are of type `org.apache.kafka.connect.data.Struct` and `keySchema` and `valueSchema` are variables of type `org.apache.kafka.connect.data.Schema`.
 The expression can invoke arbitrary methods on the variables and should evaluate into a boolean value that decides whether the message is removed `true` or kept.
@@ -96,15 +98,19 @@ value.op == 'u' && value.before.id == 2
 |Default
 |Description
 
-|`language`
+|[[configuration-option-topic-regex]]<<configuration-option-topic-regex, `topic.regex`>>
+|
+|An optional regular expression for specifying the topic(s) this transformation should be applied to. Records on any topic whose name does not match the given expression are passed on as-is.
+
+|[[configuration-option-language]]<<configuration-option-language, `language`>>
 |
 |The language in which the expression is written. Must begin with `jsr223.`, e.g. `jsr223.groovy`, or `jsr223.graal.js`. Currently, only bootstrapping via the https://jcp.org/en/jsr/detail?id=223[JSR 223 API] ("Scripting for the Java (TM) Platform") is supported.
 
-|`condition`
+|[[configuration-option-condition]]<<configuration-option-condition, `condition`>>
 |
 |The expression evaluated for every message. Must evaluate to a boolean value where a result of `true` will keep the message, and a result of `false` will remove it.
 
-|`null.handling.mode`
+|[[configuration-option-null-handling-mode]]<<configuration-option-null-handling-mode, `null.handling.mode`>>
 |`keep`
 |Prescribes how the transformation should handle `null` (tombstone) messages. The options are: `keep` (the default) to pass the message through, `drop` to remove the messages completely or `evaluate` to run the message through the condition expression.
 

@@ -1,6 +1,6 @@
 #begin
 -- Alter Table
-alter table ship_class add column ship_spec varchar(150) first, add somecol int after start_build;
+alter table ship_class add column ship_spec varchar(150) first, add somecol int after start_build, algorithm=instant;
 alter table t3 add column (c2 decimal(10, 2) comment 'comment`' null, c3 enum('abc', 'cba', 'aaa')), add index t3_i1 using btree (c2) comment 'some index';
 alter table t2 add constraint t2_pk_constraint primary key (1c), alter column `_` set default 1;
 alter table ship_class change column somecol col_for_del tinyint first;
@@ -11,6 +11,10 @@ alter table t2 drop primary key;
 alter table t3 rename to table3column;
 alter table childtable add constraint `fk1` foreign key (idParent) references parenttable(id) on delete restrict on update cascade;
 alter table table3column default character set = cp1251;
+alter table table1 add primary key (id);
+alter table table1 add primary key table_pk (id);
+alter table table1 add primary key `table_pk` (id);
+alter table table1 add primary key `table_pk` (`id`);
 #end
 #begin
 -- Alter database

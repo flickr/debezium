@@ -508,6 +508,9 @@ public class SnapshotReader extends AbstractReader {
                             break;
                         }
                         String dbName = entry.getKey();
+                        // if (!createTableFilters.databaseFilter().test(dbName)) {
+                        // continue;
+                        // }
                         // First drop, create, and then use the named database ...
                         schema.applyDdl(source, dbName, "DROP DATABASE IF EXISTS " + quote(dbName), this::enqueueSchemaChanges);
                         schema.applyDdl(source, dbName, "CREATE DATABASE " + quote(dbName), this::enqueueSchemaChanges);
@@ -516,6 +519,9 @@ public class SnapshotReader extends AbstractReader {
                             if (!isRunning()) {
                                 break;
                             }
+                            // if (!createTableFilters.tableFilter().test(tableId)) {
+                            // continue;
+                            // }
                             // This is to handle situation when global read lock is unavailable and tables are locked instead of it.
                             // MySQL forbids access to an unlocked table when there is at least one lock held on another table.
                             // Thus when we need to obtain schema even for non-monitored tables (which are not locked as we might not have access privileges)
@@ -867,7 +873,10 @@ public class SnapshotReader extends AbstractReader {
     }
 
     private boolean shouldRecordTableSchema(final MySqlSchema schema, final Filters filters, TableId id) {
-        return !schema.isStoreOnlyMonitoredTablesDdl() || filters.tableFilter().test(id);
+        if (!schema.isStoreOnlyMonitoredTablesDdl()) {
+            return !schema.isIgnoreBuildInTablesDdl() || !filters.builtInTableFilter().test(id);
+        }
+        return filters.tableFilter().test(id);
     }
 
     protected void readBinlogPosition(int step, SourceInfo source, JdbcConnection mysql, AtomicReference<String> sql) throws SQLException {

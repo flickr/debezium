@@ -58,6 +58,28 @@ public class MySqlAntlrDdlParserTest {
         tables = new Tables();
     }
 
+    @Test
+    @FixFor("DBZ-2061")
+    public void shouldUpdateSchemaForChangeDefaultValue() {
+        String ddl = "CREATE TABLE mytable (id INT PRIMARY KEY, val1 INT);"
+                + "ALTER TABLE mytable ADD COLUMN last_val INT DEFAULT 5;";
+        parser.parse(ddl, tables);
+        assertThat(((MySqlAntlrDdlParser) parser).getParsingExceptionsFromWalker().size()).isEqualTo(0);
+        assertThat(tables.size()).isEqualTo(1);
+
+        parser.parse("ALTER TABLE mytable ALTER COLUMN last_val SET DEFAULT 10;", tables);
+        assertThat(((MySqlAntlrDdlParser) parser).getParsingExceptionsFromWalker().size()).isEqualTo(0);
+        assertThat(tables.size()).isEqualTo(1);
+
+        Table table = tables.forTable(null, null, "mytable");
+        assertThat(table.columns()).hasSize(3);
+        assertThat(table.columnWithName("id")).isNotNull();
+        assertThat(table.columnWithName("val1")).isNotNull();
+        assertThat(table.columnWithName("last_val")).isNotNull();
+        assertThat(table.columnWithName("last_val").defaultValue()).isEqualTo(10);
+    }
+
+    @Test
     @FixFor("DBZ-1833")
     public void shouldNotUpdateExistingTable() {
         String ddl = "CREATE TABLE mytable (id INT PRIMARY KEY, val1 INT)";
@@ -208,6 +230,16 @@ public class MySqlAntlrDdlParserTest {
         parser.parse(ddl, tables);
         assertThat(((MySqlAntlrDdlParser) parser).getParsingExceptionsFromWalker().size()).isEqualTo(0);
         assertThat(tables.size()).isEqualTo(0);
+    }
+
+    @Test
+    @FixFor("DBZ-2067")
+    public void shouldSupportInstantAlgoOnAlterStatements() {
+        final String ddl = "CREATE TABLE foo (id SERIAL, c1 INT);" +
+                "ALTER TABLE foo ADD COLUMN c2 INT, ALGORITHM=INSTANT;";
+        parser.parse(ddl, tables);
+
+        assertThat(((MySqlAntlrDdlParser) parser).getParsingExceptionsFromWalker().size()).isEqualTo(0);
     }
 
     @Test
@@ -942,14 +974,20 @@ public class MySqlAntlrDdlParserTest {
                 + " c1 INTEGER NOT NULL, " + System.lineSeparator()
                 + " c2 VARCHAR(22) " + System.lineSeparator()
                 + ") engine=Aria;";
-        parser.parse(ddl1 + ddl2 + ddl3, tables);
-        assertThat(tables.size()).isEqualTo(3);
+        String ddl4 = "CREATE TABLE escaped_foo ( " + System.lineSeparator()
+                + " c1 INTEGER NOT NULL, " + System.lineSeparator()
+                + " c2 VARCHAR(22) " + System.lineSeparator()
+                + ") engine=TokuDB `compression`=tokudb_zlib;";
+        parser.parse(ddl1 + ddl2 + ddl3 + ddl4, tables);
+        assertThat(tables.size()).isEqualTo(4);
         listener.assertNext().createTableNamed("foo").ddlStartsWith("CREATE TABLE foo (");
         listener.assertNext().createTableNamed("bar").ddlStartsWith("CREATE TABLE bar (");
         listener.assertNext().createTableNamed("baz").ddlStartsWith("CREATE TABLE baz (");
+        listener.assertNext().createTableNamed("escaped_foo").ddlStartsWith("CREATE TABLE escaped_foo (");
         parser.parse("DROP TABLE foo", tables);
         parser.parse("DROP TABLE bar", tables);
         parser.parse("DROP TABLE baz", tables);
+        parser.parse("DROP TABLE escaped_foo", tables);
         assertThat(tables.size()).isEqualTo(0);
     }
 

@@ -1084,7 +1084,7 @@ public class MySqlConnectorIT extends AbstractConnectorTest {
                 connection.query("SHOW DATABASES", rs -> {
                     while (rs.next()) {
                         final String dbName = rs.getString(1);
-                        if (!Filters.isBuiltInDatabase(dbName) && !dbName.equals(DATABASE.getDatabaseName())) {
+                        if (!Filters.isBuiltInDatabase(dbName) && !dbName.equals(DATABASE.getDatabaseName()) && !dbName.equals("emptydb")) {
                             connection.execute("DROP DATABASE IF EXISTS " + dbName);
                         }
                     }

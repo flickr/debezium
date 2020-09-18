@@ -486,6 +486,7 @@ public class MySqlConnectorConfig extends RelationalDatabaseConnectorConfig {
     private static final String TABLE_WHITELIST_NAME = "table.whitelist";
     private static final String TABLE_BLACKLIST_NAME = "table.blacklist";
     private static final String TABLE_IGNORE_BUILTIN_NAME = "table.ignore.builtin";
+    private static final String TABLE_IGNORE_BUILTIN_DDL_NAME = "table.ignore.builtin.ddl";
 
     /**
      * Default size of the binlog buffer used for examining transactions and
@@ -617,6 +618,15 @@ public class MySqlConnectorConfig extends RelationalDatabaseConnectorConfig {
             .withValidation(Field::isBoolean)
             .withDependents(DATABASE_WHITELIST_NAME)
             .withDescription("Flag specifying whether built-in tables should be ignored.");
+
+    public static final Field TABLES_IGNORE_BUILTIN_DDL = Field.create(TABLE_IGNORE_BUILTIN_DDL_NAME)
+            .withDisplayName("Ignore DDL of system databases and tables")
+            .withType(Type.BOOLEAN)
+            .withWidth(Width.SHORT)
+            .withImportance(Importance.LOW)
+            .withDefault(false)
+            .withValidation(Field::isBoolean)
+            .withDescription("Flag specifying whether DDL of built-in tables should be ignored.");
 
     public static final Field JDBC_DRIVER = Field.create("database.jdbc.driver")
             .withDisplayName("Jdbc Driver Class Name")

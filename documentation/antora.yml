@@ -1,12 +1,12 @@
 name: reference
 title: Debezium Documentation
-version: 'master'
+version: '1.2'
 nav:
   - modules/ROOT/nav.adoc
 
 asciidoc:
   attributes:
-    debezium-version: '1.2.0.Beta1'
+    debezium-version: '1.2.0.Beta2'
     debezium-dev-version: '1.2'
     debezium-kafka-version: '2.5.0'
     debezium-docker-label: '1.1'
@@ -32,5 +32,6 @@ asciidoc:
     link-oracle-plugin-snapshot: 'https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.debezium&a=debezium-connector-oracle&v=LATEST&c=plugin&e=tar.gz'
     link-db2-plugin-snapshot: 'https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.debezium&a=debezium-connector-db2&v=LATEST&c=plugin&e=tar.gz'
     link-cassandra-plugin-snapshot: 'https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.debezium&a=debezium-connector-cassandra&v=LATEST&c=plugin&e=tar.gz'
+    link-server-snapshot: 'https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.debezium&a=debezium-server&v=LATEST&c=distribution&e=tar.gz'
     link-kafka-docs: 'https://kafka.apache.org/documentation'
     link-java7-standard-names: 'https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#MessageDigest'

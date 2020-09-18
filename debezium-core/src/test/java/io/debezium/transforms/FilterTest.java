@@ -14,17 +14,20 @@ import java.util.Map;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.header.ConnectHeaders;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.Test;
 
 import io.debezium.DebeziumException;
 import io.debezium.data.Envelope;
+import io.debezium.doc.FixFor;
 
 /**
  * @author Jiri Pechanec
  */
 public class FilterTest {
 
+    private static final String TOPIC_REGEX = "topic.regex";
     private static final String LANGUAGE = "language";
     private static final String EXPRESSION = "condition";
     private static final String NULL_HANDLING = "null.handling.mode";
@@ -96,6 +99,49 @@ public class FilterTest {
     }
 
     @Test
+    @FixFor("DBZ-2074")
+    public void shouldProcessTopic() {
+        try (final Filter<SourceRecord> transform = new Filter<>()) {
+            final Map<String, String> props = new HashMap<>();
+            props.put(EXPRESSION, "topic == 'dummy1'");
+            props.put(LANGUAGE, "jsr223.groovy");
+            transform.configure(props);
+            final SourceRecord record = createDeleteRecord(1);
+            assertThat(transform.apply(createDeleteRecord(2))).isNull();
+            assertThat(transform.apply(record)).isSameAs(record);
+        }
+    }
+
+    @Test
+    @FixFor("DBZ-2074")
+    public void shouldProcessHeader() {
+        try (final Filter<SourceRecord> transform = new Filter<>()) {
+            final Map<String, String> props = new HashMap<>();
+            props.put(EXPRESSION, "header.idh.value == 1");
+            props.put(LANGUAGE, "jsr223.groovy");
+            transform.configure(props);
+            final SourceRecord record = createDeleteRecord(1);
+            assertThat(transform.apply(createDeleteRecord(2))).isNull();
+            assertThat(transform.apply(record)).isSameAs(record);
+        }
+    }
+
+    @Test
+    @FixFor("DBZ-2024")
+    public void shouldApplyTopicRegex() {
+        try (final Filter<SourceRecord> transform = new Filter<>()) {
+            final Map<String, String> props = new HashMap<>();
+            props.put(TOPIC_REGEX, "dum.*");
+            props.put(EXPRESSION, "value.op != 'd' || value.before.id != 2");
+            props.put(LANGUAGE, "jsr223.groovy");
+            transform.configure(props);
+            final SourceRecord record = createDeleteCustomerRecord(2);
+            assertThat(transform.apply(record)).isSameAs(record);
+            assertThat(transform.apply(createDeleteRecord(2))).isNull();
+        }
+    }
+
+    @Test
     public void shouldKeepNulls() {
         try (final Filter<SourceRecord> transform = new Filter<>()) {
             final Map<String, String> props = new HashMap<>();
@@ -153,7 +199,36 @@ public class FilterTest {
         source.put("lsn", 1234);
         source.put("version", "version!");
         final Struct payload = deleteEnvelope.delete(before, source, Instant.now());
-        return new SourceRecord(new HashMap<>(), new HashMap<>(), "dummy", envelope.schema(), payload);
+        final ConnectHeaders headers = new ConnectHeaders();
+        headers.addInt("idh", id);
+        return new SourceRecord(new HashMap<>(), new HashMap<>(), "dummy" + id, 0,
+                null, null,
+                envelope.schema(), payload,
+                (long) id,
+                headers);
+    }
+
+    private SourceRecord createDeleteCustomerRecord(int id) {
+        final Schema deleteSourceSchema = SchemaBuilder.struct()
+                .field("lsn", SchemaBuilder.int32())
+                .field("version", SchemaBuilder.string())
+                .build();
+
+        Envelope deleteEnvelope = Envelope.defineSchema()
+                .withName("customer.Envelope")
+                .withRecord(recordSchema)
+                .withSource(deleteSourceSchema)
+                .build();
+
+        final Struct before = new Struct(recordSchema);
+        final Struct source = new Struct(deleteSourceSchema);
+
+        before.put("id", (byte) id);
+        before.put("name", "myRecord");
+        source.put("lsn", 1234);
+        source.put("version", "version!");
+        final Struct payload = deleteEnvelope.delete(before, source, Instant.now());
+        return new SourceRecord(new HashMap<>(), new HashMap<>(), "customer", envelope.schema(), payload);
     }
 
     private SourceRecord createNullRecord() {
@@ -165,6 +240,20 @@ public class FilterTest {
         try (final Filter<SourceRecord> transform = new Filter<>()) {
             final Map<String, String> props = new HashMap<>();
             props.put(EXPRESSION, "value.op != 'd' || value.before.id != 2");
+            props.put(LANGUAGE, "jsr223.graal.js");
+            transform.configure(props);
+            final SourceRecord record = createDeleteRecord(1);
+            assertThat(transform.apply(createDeleteRecord(2))).isNull();
+            assertThat(transform.apply(record)).isSameAs(record);
+        }
+    }
+
+    @Test
+    @FixFor("DBZ-2074")
+    public void shouldRunJavaScriptWithHeaderAndTopic() {
+        try (final Filter<SourceRecord> transform = new Filter<>()) {
+            final Map<String, String> props = new HashMap<>();
+            props.put(EXPRESSION, "header.idh.value == 1 && topic.startsWith('dummy')");
             props.put(LANGUAGE, "jsr223.graal.js");
             transform.configure(props);
             final SourceRecord record = createDeleteRecord(1);

@@ -33,6 +33,7 @@ import io.debezium.relational.ColumnEditor;
 import io.debezium.relational.Table;
 import io.debezium.relational.TableId;
 import io.debezium.util.BoundedConcurrentHashMap;
+import io.debezium.util.Clock;
 
 /**
  * {@link JdbcConnection} extension to be used with Microsoft SQL Server
@@ -72,6 +73,8 @@ public class SqlServerConnection extends JdbcConnection {
      */
     private final String realDatabaseName;
     private final ZoneId transactionTimezone;
+    private final SourceTimestampMode sourceTimestampMode;
+    private final Clock clock;
 
     public static interface ResultSetExtractor<T> {
         T apply(ResultSet rs) throws SQLException;
@@ -82,16 +85,18 @@ public class SqlServerConnection extends JdbcConnection {
     /**
      * Creates a new connection using the supplied configuration.
      *
-     * @param config
-     *            {@link Configuration} instance, may not be null.
+     * @param config {@link Configuration} instance, may not be null.
+     * @param sourceTimestampMode strategy for populating {@code source.ts_ms}.
      */
-    public SqlServerConnection(Configuration config) {
+    public SqlServerConnection(Configuration config, Clock clock, SourceTimestampMode sourceTimestampMode) {
         super(config, FACTORY);
         lsnToInstantCache = new BoundedConcurrentHashMap<>(100);
         realDatabaseName = retrieveRealDatabaseName();
         boolean supportsAtTimeZone = supportsAtTimeZone();
         transactionTimezone = retrieveTransactionTimezone(supportsAtTimeZone);
         lsnToTimestamp = getLsnToTimestamp(supportsAtTimeZone);
+        this.clock = clock;
+        this.sourceTimestampMode = sourceTimestampMode;
     }
 
     /**
@@ -194,10 +199,16 @@ public class SqlServerConnection extends JdbcConnection {
      * Map a commit LSN to a point in time when the commit happened.
      *
      * @param lsn - LSN of the commit
-     * @return time when the commit was recorded into the database log
+     * @return time when the commit was recorded into the database log or the
+     *         current time, depending on the setting for the "source timestamp
+     *         mode" option
      * @throws SQLException
      */
     public Instant timestampOfLsn(Lsn lsn) throws SQLException {
+        if (SourceTimestampMode.PROCESSING.equals(sourceTimestampMode)) {
+            return clock.currentTime();
+        }
+
         if (lsn.getBinary() == null) {
             return null;
         }

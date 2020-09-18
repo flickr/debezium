@@ -598,7 +598,7 @@ alterSpecification
         ')'                                                         #alterByAddColumns
     | ADD indexFormat=(INDEX | KEY) uid? indexType?
       indexColumnNames indexOption*                                 #alterByAddIndex
-    | ADD (CONSTRAINT name=uid?)? PRIMARY KEY
+    | ADD (CONSTRAINT name=uid?)? PRIMARY KEY index=uid?
       indexType? indexColumnNames indexOption*                      #alterByAddPrimaryKey
     | ADD (CONSTRAINT name=uid?)? UNIQUE 
       indexFormat=(INDEX | KEY)? indexName=uid?
@@ -609,7 +609,7 @@ alterSpecification
     | ADD (CONSTRAINT name=uid?)? FOREIGN KEY
       indexName=uid? indexColumnNames referenceDefinition           #alterByAddForeignKey
     | ADD (CONSTRAINT name=uid?)? CHECK '(' expression ')'          #alterByAddCheckTableConstraint
-    | ALGORITHM '='? algType=(DEFAULT | INPLACE | COPY)             #alterBySetAlgorithm
+    | ALGORITHM '='? algType=(DEFAULT | INSTANT | INPLACE | COPY)   #alterBySetAlgorithm
     | ALTER COLUMN? uid
       (SET DEFAULT defaultValue | DROP DEFAULT)                     #alterByChangeDefault
     | CHANGE COLUMN? oldColumn=uid

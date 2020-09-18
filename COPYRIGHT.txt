@@ -61,6 +61,7 @@ Ewen Cheslack-Postava
 Fabian Aussems
 Fabio Cantarini
 Fatih Güçlü Akkaya
+Fándly Gergő 
 Felix Eckhardt
 Fintan Bolton
 Frank Mormino
@@ -102,6 +103,7 @@ Jos Huiting
 Josh Arenberg
 Josh Stanfield
 Joy Gao
+Juan Antonio Pedraza
 Jun Du
 Jure Kajzer
 Keith Barber
@@ -122,6 +124,7 @@ Mariusz Strzelecki
 Matteo Capitanio
 Mathieu Rozieres
 Matthias Wessendorf
+Max Kaplan
 Melissa Winstanley
 Mike Graham
 Mincong Huang

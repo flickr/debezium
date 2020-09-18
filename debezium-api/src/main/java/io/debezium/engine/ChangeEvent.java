@@ -19,4 +19,9 @@ public interface ChangeEvent<K, V> {
     public K key();
 
     public V value();
+
+    /**
+     * @return A name of the logical destination for which the event is intended
+     */
+    public String destination();
 }
